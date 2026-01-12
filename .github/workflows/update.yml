@@ -2,34 +2,38 @@ name: Update Power Schedule
 
 on:
   schedule:
-    # Запуск щогодини (у форматі cron). 
-    # '0 * * * *' означає: 0 хвилина кожної години.
+    # Запуск на початку кожної години
     - cron: '0 * * * *'
-  workflow_dispatch: # Додає кнопку "Run" для ручного запуску
+  workflow_dispatch: # Кнопка для ручного запуску
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Виділяється віртуальний сервер на Linux
+    runs-on: ubuntu-latest
+    # Даємо права для запису змін у репозиторій
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3 # Копіює твій код на цей сервер
+        uses: actions/checkout@v4 # Оновлено до стабільної v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4 # Оновлено до v4
         with:
-          node-version: 18 # Встановлює Node.js
+          node-version: 20 # ВИПРАВЛЕННЯ: Node 20 замість 18 для стабільної роботи fetch/undici
 
       - name: Install dependencies
-        run: npm install # Встановлює axios та cheerio
+        run: |
+          npm init -y
+          npm install axios cheerio
 
       - name: Run parser
-        run: node parser.js # Запускає твій скрипт-парзер
+        run: node parser.js
 
       - name: Commit and Push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add data.json
-          git commit -m "Автоматичне оновлення графіка: $(date)" || exit 0
-          git push
+          # Commit тільки якщо файл змінився, щоб не плодити пусті логи
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update schedule: $(date)" && git push origin master)
