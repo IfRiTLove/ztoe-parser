@@ -16,7 +16,8 @@ async function parse() {
         $('table tr').each((i, row) => {
             const rowHtml = $(row).html();
 
-            if (rowHtml.includes('>2.2<') && !foundRow) {
+            // Шукаємо чергу 2.2 (виключаємо рядки з повідомленнями)
+            if (rowHtml.includes('>2.2<') && rowHtml.includes('pidcherga_id') && !rowHtml.includes('<h3>') && !foundRow) {
                 foundRow = true;
                 const cells = $(row).find('td');
 
