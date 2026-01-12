@@ -1,0 +1,35 @@
+name: Update Power Schedule
+
+on:
+  schedule:
+    # Запуск щогодини (у форматі cron). 
+    # '0 * * * *' означає: 0 хвилина кожної години.
+    - cron: '0 * * * *'
+  workflow_dispatch: # Додає кнопку "Run" для ручного запуску
+
+jobs:
+  build:
+    runs-on: ubuntu-latest # Виділяється віртуальний сервер на Linux
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3 # Копіює твій код на цей сервер
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18 # Встановлює Node.js
+
+      - name: Install dependencies
+        run: npm install # Встановлює axios та cheerio
+
+      - name: Run parser
+        run: node parser.js # Запускає твій скрипт-парзер
+
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data.json
+          git commit -m "Автоматичне оновлення графіка: $(date)" || exit 0
+          git push
