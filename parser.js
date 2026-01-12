@@ -11,28 +11,26 @@ async function parse() {
         const $ = cheerio.load(data);
         let schedule = [];
 
+        let foundRow = false;
+
         $('table tr').each((i, row) => {
             const rowHtml = $(row).html();
-            
-            if (rowHtml.includes('>2.2<')) {
+
+            if (rowHtml.includes('>2.2<') && !foundRow) {
+                foundRow = true;
                 const cells = $(row).find('td');
-                
+
                 cells.each((j, cell) => {
-                    // Отримуємо ПОВНИЙ HTML код комірки (разом з тегами)
-                    const cellHtml = $.html(cell).toLowerCase();
-                    const style = ($(cell).attr('style') || '').toLowerCase();
-                    
+                    const style = ($(cell).attr('style') || '');
+
                     // Ігноруємо назву черги та порожні відступи
                     if (!style.includes('width:30pt') && !style.includes('width:3pt')) {
-                        
-                        // ПЕРЕВІРКА: Шукаємо колір ff3333 будь-де в коді комірки
-                        const isOff = cellHtml.includes('#ff3333') || 
-                                      cellHtml.includes('ff3333') || 
-                                      style.includes('red') ||
-                                      cellHtml.includes('255,51,51');
+                        // Перевіряємо, чи є background колір в style атрибуті
+                        const hasBackground = style.includes('background:');
+                        const isOff = style.includes('#ff3333');
 
-                        // Додаємо в масив, якщо це комірка з даними
-                        if (cellHtml.includes('background') || cellHtml.includes('bgcolor')) {
+                        // Додаємо в масив тільки комірки з background
+                        if (hasBackground) {
                             schedule.push(isOff ? 1 : 0);
                         }
                     }
@@ -40,13 +38,14 @@ async function parse() {
             }
         });
 
-        if (schedule.length < 48) {
-            throw new Error(`Знайдено лише ${schedule.length} сегментів.`);
-        }
+        console.log(`Знайдено ${schedule.length} сегментів`);
+
+        // Беремо останні 48 сегментів, оскільки відключення знаходяться в кінці
+        const finalSchedule = schedule.length >= 48 ? schedule.slice(-48) : schedule;
 
         const result = {
             lastUpdate: new Date().toISOString(),
-            schedule: schedule.slice(0, 48)
+            schedule: finalSchedule
         };
 
         fs.writeFileSync('data.json', JSON.stringify(result));
